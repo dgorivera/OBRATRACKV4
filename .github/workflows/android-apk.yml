@@ -1,0 +1,62 @@
+name: Build OBRATRACK Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "OBRATRACK_V4_LISTO_PARA_APK.zip"
+      - ".github/workflows/android-apk.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Extract application source
+        run: |
+          unzip -q OBRATRACK_V4_LISTO_PARA_APK.zip
+          test -f obrat_v4/package.json
+          test -f obrat_v4/capacitor.config.ts
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Enable pnpm
+        run: corepack enable
+
+      - name: Install dependencies
+        working-directory: obrat_v4
+        run: pnpm install --frozen-lockfile
+
+      - name: Build web application
+        working-directory: obrat_v4
+        run: pnpm run build
+
+      - name: Sync Android project
+        working-directory: obrat_v4
+        run: pnpm exec cap sync android
+
+      - name: Build debug APK
+        working-directory: obrat_v4/android
+        run: chmod +x gradlew && ./gradlew assembleDebug --no-daemon
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: OBRATRACK-Android-debug
+          path: obrat_v4/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
