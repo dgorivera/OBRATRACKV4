@@ -1,0 +1,60 @@
+name: Prepare OBRATRACK iOS
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-ios-simulator:
+    runs-on: macos-15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Extract application source
+        run: |
+          unzip -q OBRATRACK_V4_LISTO_PARA_APK.zip
+          test -f obrat_v4/package.json
+          test -f obrat_v4/capacitor.config.ts
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+          run_install: false
+
+      - name: Install dependencies and iOS platform
+        working-directory: obrat_v4
+        run: |
+          pnpm install --no-frozen-lockfile
+          pnpm add @capacitor/ios@^8.6.0
+          pnpm exec cap add ios
+
+      - name: Build web application
+        working-directory: obrat_v4
+        run: pnpm run build
+
+      - name: Sync iOS project
+        working-directory: obrat_v4
+        run: pnpm exec cap sync ios
+
+      - name: Build iPhone simulator app
+        working-directory: obrat_v4
+        run: |
+          xcodebuild -version
+          xcodebuild -workspace ios/App/App.xcworkspace -scheme App -sdk iphonesimulator -configuration Debug -derivedDataPath build build CODE_SIGNING_ALLOWED=NO
+
+      - name: Upload simulator build
+        uses: actions/upload-artifact@v4
+        with:
+          name: OBRATRACK-iOS-Simulator
+          path: obrat_v4/build/Build/Products/Debug-iphonesimulator/App.app
+          if-no-files-found: error
+          retention-days: 14
