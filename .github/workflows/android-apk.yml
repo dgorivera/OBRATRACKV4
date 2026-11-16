@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     paths:
-      - "OBRATRACK_V4_LISTO_PARA_APK.zip"
+      - "OBRATRACK V5.zip"
       - ".github/workflows/android-apk.yml"
 
 permissions:
@@ -19,7 +19,8 @@ jobs:
 
       - name: Extract application source
         run: |
-          unzip -q OBRATRACK_V4_LISTO_PARA_APK.zip
+          mkdir -p obrat_v4
+          unzip -q "OBRATRACK V5.zip" -d obrat_v4
           test -f obrat_v4/package.json
           test -f obrat_v4/capacitor.config.ts
           test -f obrat_v4/android/gradlew
